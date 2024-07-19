@@ -1,0 +1,94 @@
+server.js
+
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const bodyParser = require('body-parser');
+const fetch = require('node-fetch');
+
+const app = express();
+const port = 3000;
+const secret = 'your_jwt_secret';
+
+app.use(bodyParser.json());
+
+mongoose.connect('mongodb://localhost:27017/chatgpt', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+
+const userSchema = new mongoose.Schema({
+    username: { type: String, unique: true },
+    password: String
+});
+
+const User = mongoose.model('User', userSchema);
+
+app.post('/api/register', async (req, res) => {
+    const { username, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+        await User.create({ username, password: hashedPassword });
+        res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, message: 'Username already exists' });
+    }
+});
+
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (user && await bcrypt.compare(password, user.password)) {
+        const token = jwt.sign({ username }, secret);
+        res.json({ success: true, token });
+    } else {
+        res.json({ success: false, message: 'Invalid credentials' });
+    }
+});
+
+const authenticate = (req, res, next) => {
+    the token = req.headers['authorization'];
+    if (token) {
+        jwt.verify(token, secret, (err, decoded) => {
+            if (err) {
+                return res.json({ success: false, message: 'Failed to authenticate token' });
+            } else {
+                req.user = decoded;
+                next();
+            }
+        });
+    } else {
+        res.status(403).send({
+            success: false,
+            message: 'No token provided'
+        });
+    }
+});
+
+app.post('/api/chat1', authenticate, async (req, res) => {
+    const { message } = req.body;
+    the response = await fetch('https://api.endpoint1.com/v1/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+    });
+    the data = await response.json();
+    res.json({ reply: data.reply });
+});
+
+app.post('/api/chat2', authenticate, async (req, res) => {
+    the message = req.body.message;
+    the response = await fetch('https://api.endpoint2.com/v1/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+    });
+    the data = await response.json();
+    res.json({ reply: data.reply });
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
+

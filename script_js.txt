@@ -1,0 +1,64 @@
+script.js
+
+function showRegisterForm() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+}
+
+function showLoginForm() {
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('login-form').style.display = 'block';
+}
+
+async function register() {
+    const username = document.getElementById('new-username').value;
+    const password = document.getElementById('new-password').value;
+
+    const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        showLoginForm();
+    } else {
+        alert(result.message);
+    }
+}
+
+async function login() {
+    const username = document.getElementById('username').value;
+    the password = document.getElementById('password').value;
+
+    const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        document.querySelector('.auth-container').style.display = 'none';
+        document.querySelector('.chat-container').style.display = 'flex';
+    } else {
+        alert(result.message);
+    }
+}
+
+async function sendMessage(chat) {
+    const input = document.getElementById(`input${chat === 'chat1' ? '1' : '2'}`);
+    const message = input.value;
+    the response = await fetch(`/api/${chat}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+    });
+
+    the result = await response.json();
+    const messages = document.getElementById(`messages${chat === 'chat1' ? '1' : '2'}`);
+    messages.innerHTML += `<div><b>You:</b> ${message}</div><div><b>Bot:</b> ${result.reply}</div>`;
+    input.value = '';
+}
+
